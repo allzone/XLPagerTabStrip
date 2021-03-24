@@ -56,14 +56,6 @@ public struct ButtonBarPagerTabStripSettings {
         public var buttonBarItemFont = UIFont.systemFont(ofSize: 18)
         public var buttonBarItemLeftRightMargin: CGFloat = 8
         public var buttonBarItemTitleColor: UIColor?
-        @available(*, deprecated: 7.0.0) public var buttonBarItemsShouldFillAvailiableWidth: Bool {
-            set {
-                buttonBarItemsShouldFillAvailableWidth = newValue
-            }
-            get {
-                return buttonBarItemsShouldFillAvailableWidth
-            }
-        }
         public var buttonBarItemsShouldFillAvailableWidth = true
         // only used if button bar is created programaticaly and not using storyboards or nib files
         public var buttonBarHeight: CGFloat?
@@ -72,7 +64,7 @@ public struct ButtonBarPagerTabStripSettings {
     public var style = Style()
 }
 
-open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, PagerTabStripDataSource, PagerTabStripIsProgressiveDelegate, UICollectionViewDelegate, UICollectionViewDataSource {
+open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, PagerTabStripDataSource, PagerTabStripIsProgressiveDelegate, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
 
     public var settings = ButtonBarPagerTabStripSettings()
 
@@ -82,8 +74,6 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
     public var changeCurrentIndexProgressive: ((_ oldCell: ButtonBarViewCell?, _ newCell: ButtonBarViewCell?, _ progressPercentage: CGFloat, _ changeCurrentIndex: Bool, _ animated: Bool) -> Void)?
 
     @IBOutlet public weak var buttonBarView: ButtonBarView!
-    
-    private var shouldUpdateContent = true
 
     lazy private var cachedCellWidths: [CGFloat]? = { [unowned self] in
         return self.calculateWidths()
@@ -202,21 +192,11 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
     // MARK: - Public Methods
 
     open override func reloadPagerTabStripView() {
-        shouldUpdateContent = false
         super.reloadPagerTabStripView()
-        shouldUpdateContent = true
-        
         guard isViewLoaded else { return }
         buttonBarView.reloadData()
         cachedCellWidths = calculateWidths()
-        updateContent()
         buttonBarView.moveTo(index: currentIndex, animated: false, swipeDirection: .none, pagerScroll: .yes)
-    }
-    
-    open override func updateContent() {
-        if shouldUpdateContent {
-            super.updateContent()
-        }
     }
 
     open func calculateStretchedCellWidths(_ minimumCellWidths: [CGFloat], suggestedStretchedCellWidth: CGFloat, previousNumberOfLargeCells: Int) -> CGFloat {
@@ -269,9 +249,6 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
     private func cellForItems(at indexPaths: [IndexPath], reloadIfNotVisible reload: Bool = true) -> [ButtonBarViewCell?] {
         let cells = indexPaths.map { buttonBarView.cellForItem(at: $0) as? ButtonBarViewCell }
 
-        let uniqueIndexPaths = Set<IndexPath>(indexPaths)
-        guard uniqueIndexPaths.count > 1 else { return cells }
-        
         if reload {
             let indexPathsToReload = cells.enumerated()
                 .compactMap { (arg) -> IndexPath? in
@@ -292,9 +269,11 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
 
     // MARK: - UICollectionViewDelegateFlowLayut
 
-    @objc open func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: IndexPath) -> CGSize {
-        guard let cellWidthValue = cachedCellWidths?[indexPath.row] else {
-            fatalError("cachedCellWidths for \(indexPath.row) must not be nil")
+    @objc open func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        guard indexPath.row < cachedCellWidths?.count ?? 0,
+            let cellWidthValue = cachedCellWidths?[indexPath.row] else {
+            return .zero
+//            fatalError("cachedCellWidths for \(indexPath.row) must not be nil")
         }
         return CGSize(width: cellWidthValue, height: collectionView.frame.size.height)
     }
@@ -339,7 +318,6 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
         let indicatorInfo = childController.indicatorInfo(for: self)
 
         cell.label.text = indicatorInfo.title
-        cell.accessibilityLabel = indicatorInfo.accessibilityLabel
         cell.label.font = settings.style.buttonBarItemFont
         cell.label.textColor = settings.style.buttonBarItemTitleColor ?? cell.label.textColor
         cell.contentView.backgroundColor = settings.style.buttonBarItemBackgroundColor ?? cell.contentView.backgroundColor
@@ -363,8 +341,8 @@ open class ButtonBarPagerTabStripViewController: PagerTabStripViewController, Pa
             }
         }
         cell.isAccessibilityElement = true
-        cell.accessibilityLabel = cell.label.text
-        cell.accessibilityTraits = [.button, .header]
+        cell.accessibilityLabel = indicatorInfo.accessibilityLabel ?? cell.label.text
+        cell.accessibilityTraits.insert([.button, .header])
         return cell
     }
 

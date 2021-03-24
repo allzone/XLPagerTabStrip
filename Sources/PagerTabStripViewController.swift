@@ -67,6 +67,7 @@ open class PagerTabStripViewController: UIViewController, UIScrollViewDelegate {
     }
 
     open var scrollPercentage: CGFloat {
+        guard pageWidth > 0 else { return 0 }
         if swipeDirection != .right {
             let module = fmod(containerView.contentOffset.x, pageWidth)
             return module == 0.0 ? 1.0 : module / pageWidth
@@ -172,7 +173,7 @@ open class PagerTabStripViewController: UIViewController, UIScrollViewDelegate {
     }
 
     open func moveTo(viewController: UIViewController, animated: Bool = true) {
-        moveToViewController(at: viewControllers.index(of: viewController)!, animated: animated)
+        moveToViewController(at: viewControllers.firstIndex(of: viewController)!, animated: animated)
     }
 
     // MARK: - PagerTabStripDataSource
@@ -203,7 +204,7 @@ open class PagerTabStripViewController: UIViewController, UIScrollViewDelegate {
     }
 
     open func offsetForChild(viewController: UIViewController) throws -> CGFloat {
-        guard let index = viewControllers.index(of: viewController) else {
+        guard let index = viewControllers.firstIndex(of: viewController) else {
             throw PagerTabStripError.viewControllerOutOfBounds
         }
         return offsetForChild(at: index)
@@ -215,6 +216,7 @@ open class PagerTabStripViewController: UIViewController, UIScrollViewDelegate {
     }
 
     open func virtualPageFor(contentOffset: CGFloat) -> Int {
+        guard pageWidth > 0 else { return 0 }
         return Int((contentOffset + 1.5 * pageWidth) / pageWidth) - 1
     }
 
