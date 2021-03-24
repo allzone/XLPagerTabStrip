@@ -247,21 +247,21 @@ open class PagerTabStripViewController: UIViewController, UIScrollViewDelegate {
                     childController.view.frame = CGRect(x: offsetForChild(at: index), y: 0, width: view.bounds.width, height: containerView.bounds.height)
                     childController.view.autoresizingMask = [.flexibleHeight, .flexibleWidth]
                 } else {
-//                    childController.beginAppearanceTransition(true, animated: false)
+                    childController.beginAppearanceTransition(true, animated: false)
                     addChild(childController)
                     childController.view.frame = CGRect(x: offsetForChild(at: index), y: 0, width: view.bounds.width, height: containerView.bounds.height)
                     childController.view.autoresizingMask = [.flexibleHeight, .flexibleWidth]
                     containerView.addSubview(childController.view)
                     childController.didMove(toParent: self)
-//                    childController.endAppearanceTransition()
+                    childController.endAppearanceTransition()
                 }
             } else {
                 if childController.parent != nil {
-//                    childController.beginAppearanceTransition(false, animated: false)
+                    childController.beginAppearanceTransition(false, animated: false)
                     childController.willMove(toParent: nil)
                     childController.view.removeFromSuperview()
                     childController.removeFromParent()
-//                    childController.endAppearanceTransition()
+                    childController.endAppearanceTransition()
                 }
             }
         }
